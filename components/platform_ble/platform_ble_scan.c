@@ -1,4 +1,5 @@
 #include "platform_ble_scan.h"
+#include "platform_ble_device.h"
 
 #include <limits.h>
 #include <string.h>
@@ -60,6 +61,8 @@ static int platform_ble_gap_event(struct ble_gap_event *event, void *arg)
         };
         memcpy(packet.address.val, event->disc.addr.val,
                sizeof(packet.address.val));
+
+        platform_ble_device_dispatch_packet(&packet);
 
         if (s_scan_callback != NULL) {
             s_scan_callback(&packet, s_scan_context);
