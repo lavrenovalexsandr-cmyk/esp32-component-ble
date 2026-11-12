@@ -28,7 +28,7 @@ typedef void (*platform_ble_device_event_callback_t)(
     const platform_ble_device_event_t *event, void *context);
 
 /**
- * Descriptor and context must remain valid until unregistration.
+ * Descriptor and context must remain valid while registered and until in-flight callbacks return; static lifetime is recommended.
  * matches() should be a fast, side-effect-free filter.
  * on_advertisement() is called only when matches() returns true.
  */
