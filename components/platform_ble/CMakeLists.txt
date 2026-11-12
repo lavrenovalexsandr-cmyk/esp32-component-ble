@@ -7,6 +7,8 @@ idf_component_register(
     PRIV_INCLUDE_DIRS
         "."
     REQUIRES
+        esp_common
+    PRIV_REQUIRES
         bt
         log
 )
