@@ -18,23 +18,20 @@ static bool s_scan_active;
 static bool s_has_pending_config;
 static platform_ble_scan_config_t s_pending_config;
 
+extern bool platform_ble_is_initialized(void);
 extern bool platform_ble_is_host_synced(void);
 
 static platform_ble_addr_type_t map_address_type(uint8_t type)
 {
     switch (type) {
-    case BLE_ADDR_PUBLIC:
+    case 0: /* BLE_ADDR_PUBLIC */
         return PLATFORM_BLE_ADDR_PUBLIC;
-    case BLE_ADDR_RANDOM:
+    case 1: /* BLE_ADDR_RANDOM */
         return PLATFORM_BLE_ADDR_RANDOM;
-#ifdef BLE_ADDR_PUBLIC_ID
-    case BLE_ADDR_PUBLIC_ID:
+    case 2: /* BLE_ADDR_PUBLIC_ID */
         return PLATFORM_BLE_ADDR_PUBLIC_ID;
-#endif
-#ifdef BLE_ADDR_RANDOM_ID
-    case BLE_ADDR_RANDOM_ID:
+    case 3: /* BLE_ADDR_RANDOM_ID */
         return PLATFORM_BLE_ADDR_RANDOM_ID;
-#endif
     default:
         return PLATFORM_BLE_ADDR_ANONYMOUS;
     }
@@ -173,6 +170,10 @@ esp_err_t platform_ble_scan_set_callback(
 
 esp_err_t platform_ble_scan_start(const platform_ble_scan_config_t *config)
 {
+    if (!platform_ble_is_initialized()) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
     if (s_scan_active || s_scan_requested) {
         return ESP_ERR_INVALID_STATE;
     }
