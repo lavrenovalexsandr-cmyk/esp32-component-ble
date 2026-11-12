@@ -90,16 +90,22 @@ esp_err_t platform_ble_device_emit_event(
     platform_ble_device_event_callback_t callback;
     void *context;
     portENTER_CRITICAL(&s_registry_lock);
-    bool registered = driver_is_registered_locked(driver_id);
+    const char *registered_driver_id = NULL;
+    for (size_t i = 0; i < s_driver_count; ++i) {
+        if (strcmp(s_drivers[i]->id, driver_id) == 0) {
+            registered_driver_id = s_drivers[i]->id;
+            break;
+        }
+    }
     callback = s_event_callback;
     context = s_event_context;
     portEXIT_CRITICAL(&s_registry_lock);
 
-    if (!registered) return ESP_ERR_NOT_FOUND;
+    if (registered_driver_id == NULL) return ESP_ERR_NOT_FOUND;
     if (callback == NULL) return ESP_ERR_INVALID_STATE;
 
     const platform_ble_device_event_t event = {
-        .driver_id = driver_id,
+        .driver_id = registered_driver_id,
         .address = *address,
         .event_id = event_id,
         .payload = payload,
