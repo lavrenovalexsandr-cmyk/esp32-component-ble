@@ -1,5 +1,6 @@
 #include "esp_err.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
 
 #include "platform_ble.h"
 #include "platform_ble_scan.h"
@@ -29,6 +30,10 @@ static void on_advertisement(
 void app_main(void)
 {
     ESP_LOGI(TAG, "Starting ESP32 Platform BLE test");
+
+    /* ESP-IDF NimBLE controller initialization requires NVS to be ready.
+     * NVS ownership remains with the application, not platform_ble. */
+    ESP_ERROR_CHECK(nvs_flash_init());
 
     ESP_ERROR_CHECK(platform_ble_scan_set_callback(on_advertisement, NULL));
     ESP_ERROR_CHECK(platform_ble_init(NULL));
