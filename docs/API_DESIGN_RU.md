@@ -35,7 +35,7 @@
 - platform_ble_scan_stop() — остановить сканирование;
 - platform_ble_scan_is_active() — получить состояние сканирования.
 
-Scan config предусматривает active/passive scan, interval и window в единицах BLE 0.625 ms, duration в миллисекундах (0 означает без ограничения по времени), duplicate filtering.
+Scan config предусматривает active/passive scan, interval и window в единицах BLE 0.625 ms, duration в миллисекундах (0 означает без ограничения по времени), duplicate filtering. По умолчанию используется passive scan, interval 60 ms, window 30 ms и duplicate filtering выключен: для датчиков важно получать повторяющиеся рекламные пакеты, даже если их содержимое не изменилось.
 
 Если scan запрошен до синхронизации NimBLE host, запрос сохраняется и запускается после sync callback. Параметры проверяются до запуска: interval/window должны быть ненулевыми, window не может превышать interval.
 
