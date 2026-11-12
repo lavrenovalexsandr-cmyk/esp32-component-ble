@@ -11,5 +11,6 @@ idf_component_register(
         esp_common
     PRIV_REQUIRES
         bt
+        freertos
         log
 )
