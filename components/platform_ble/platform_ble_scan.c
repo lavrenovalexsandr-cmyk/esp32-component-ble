@@ -7,12 +7,16 @@
 #include "host/ble_gap.h"
 #include "host/ble_hs.h"
 
+#include "platform_ble_internal.h"
+
 static const char *TAG = "platform_ble_scan";
 
 static platform_ble_scan_callback_t s_scan_callback;
 static void *s_scan_context;
 static bool s_scan_requested;
 static bool s_scan_active;
+static bool s_has_pending_config;
+static platform_ble_scan_config_t s_pending_config;
 
 extern bool platform_ble_is_host_synced(void);
 
@@ -23,6 +27,14 @@ static platform_ble_addr_type_t map_address_type(uint8_t type)
         return PLATFORM_BLE_ADDR_PUBLIC;
     case BLE_ADDR_RANDOM:
         return PLATFORM_BLE_ADDR_RANDOM;
+#ifdef BLE_ADDR_PUBLIC_ID
+    case BLE_ADDR_PUBLIC_ID:
+        return PLATFORM_BLE_ADDR_PUBLIC_ID;
+#endif
+#ifdef BLE_ADDR_RANDOM_ID
+    case BLE_ADDR_RANDOM_ID:
+        return PLATFORM_BLE_ADDR_RANDOM_ID;
+#endif
     default:
         return PLATFORM_BLE_ADDR_ANONYMOUS;
     }
@@ -62,6 +74,7 @@ static int platform_ble_gap_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_DISC_COMPLETE:
         s_scan_active = false;
         s_scan_requested = false;
+        s_has_pending_config = false;
         ESP_LOGI(TAG, "BLE scan completed, reason=%d",
                  event->disc_complete.reason);
         return 0;
@@ -69,6 +82,16 @@ static int platform_ble_gap_event(struct ble_gap_event *event, void *arg)
     default:
         return 0;
     }
+}
+
+static esp_err_t validate_config(const platform_ble_scan_config_t *config)
+{
+    if (config->interval == 0 || config->window == 0 ||
+        config->window > config->interval ||
+        config->duration_ms > INT32_MAX) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    return ESP_OK;
 }
 
 static esp_err_t start_scan_internal(const platform_ble_scan_config_t *config)
@@ -87,17 +110,13 @@ static esp_err_t start_scan_internal(const platform_ble_scan_config_t *config)
         return ESP_ERR_INVALID_STATE;
     }
 
-    platform_ble_scan_config_t cfg =
-        config != NULL ? *config : (platform_ble_scan_config_t)
-            PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
+    platform_ble_scan_config_t cfg = config != NULL
+        ? *config
+        : (platform_ble_scan_config_t)PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
 
-    if (cfg.interval == 0 || cfg.window == 0 ||
-        cfg.window > cfg.interval) {
-        return ESP_ERR_INVALID_ARG;
-    }
-
-    if (cfg.duration_ms > INT32_MAX) {
-        return ESP_ERR_INVALID_ARG;
+    esp_err_t err = validate_config(&cfg);
+    if (err != ESP_OK) {
+        return err;
     }
 
     rc = ble_hs_id_infer_auto(0, &own_addr_type);
@@ -131,11 +150,16 @@ static esp_err_t start_scan_internal(const platform_ble_scan_config_t *config)
 
 void platform_ble_scan_on_sync(void)
 {
-    if (s_scan_requested && !s_scan_active) {
-        platform_ble_scan_config_t config =
-            PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
-        (void)start_scan_internal(&config);
+    if (!s_scan_requested || s_scan_active) {
+        return;
     }
+
+    platform_ble_scan_config_t config = s_has_pending_config
+        ? s_pending_config
+        : (platform_ble_scan_config_t)PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
+
+    (void)start_scan_internal(&config);
+    s_has_pending_config = false;
 }
 
 esp_err_t platform_ble_scan_set_callback(
@@ -153,23 +177,23 @@ esp_err_t platform_ble_scan_start(const platform_ble_scan_config_t *config)
         return ESP_ERR_INVALID_STATE;
     }
 
-    if (config != NULL) {
-        platform_ble_scan_config_t cfg = *config;
-        if (cfg.interval == 0 || cfg.window == 0 ||
-            cfg.window > cfg.interval || cfg.duration_ms > INT32_MAX) {
-            return ESP_ERR_INVALID_ARG;
-        }
-        if (!platform_ble_is_host_synced()) {
-            /* A scan requested before host synchronization uses the supplied
-             * configuration once the host becomes ready. */
-            s_pending_config = cfg;
-            s_has_pending_config = true;
-            s_scan_requested = true;
-            return ESP_OK;
-        }
+    platform_ble_scan_config_t cfg = config != NULL
+        ? *config
+        : (platform_ble_scan_config_t)PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
+
+    esp_err_t err = validate_config(&cfg);
+    if (err != ESP_OK) {
+        return err;
     }
 
-    return start_scan_internal(config);
+    if (!platform_ble_is_host_synced()) {
+        s_pending_config = cfg;
+        s_has_pending_config = true;
+        s_scan_requested = true;
+        return ESP_OK;
+    }
+
+    return start_scan_internal(&cfg);
 }
 
 esp_err_t platform_ble_scan_stop(void)
