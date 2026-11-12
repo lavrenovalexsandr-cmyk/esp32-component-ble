@@ -29,11 +29,18 @@ idf.py -p PORT flash monitor
 
 ## Что проверяет этот тест
 
-1. Инициализацию NimBLE через platform_ble_init().
-2. Синхронизацию NimBLE host.
-3. Запуск passive scan.
-4. Преобразование GAP advertising report в platform_ble_adv_packet_t.
-5. Передачу пакета приложению через scan callback.
+1. Инициализацию NVS приложением до запуска BLE.
+2. Инициализацию NimBLE через platform_ble_init().
+3. Синхронизацию NimBLE host.
+4. Запуск passive scan.
+5. Преобразование GAP advertising report в platform_ble_adv_packet_t.
+6. Передачу пакета приложению через scan callback.
+
+## Владение NVS
+
+ESP-IDF NimBLE использует NVS на этапе инициализации контроллера. Поэтому приложение должно вызвать nvs_flash_init() до platform_ble_init(). BLE Core намеренно не инициализирует и не стирает NVS: хранилище является общим ресурсом приложения, и автоматическое стирание могло бы удалить чужие настройки.
+
+Если nvs_flash_init() возвращает ошибку из-за несовместимой или повреждённой NVS-разметки, решение о восстановлении принимает приложение.
 
 ## Ограничения текущего этапа
 
