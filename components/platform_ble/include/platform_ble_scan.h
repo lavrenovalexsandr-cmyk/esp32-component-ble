@@ -37,13 +37,14 @@ typedef struct {
     bool filter_duplicates;
 } platform_ble_scan_config_t;
 
+/** Passive scan, 60 ms interval, 30 ms window, continuous, no duplicate filtering. */
 #define PLATFORM_BLE_SCAN_DEFAULT_CONFIG() \
     ((platform_ble_scan_config_t) {        \
         .active = false,                   \
         .interval = 0x0060,                \
         .window = 0x0030,                  \
         .duration_ms = 0,                  \
-        .filter_duplicates = true          \
+        .filter_duplicates = false         \
     })
 
 /** Runs in BLE host callback context; do not block. */
