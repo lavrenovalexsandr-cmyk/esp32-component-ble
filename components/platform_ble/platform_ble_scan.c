@@ -128,7 +128,7 @@ static esp_err_t start_scan_internal(const platform_ble_scan_config_t *config)
     params.itvl = cfg.interval;
     params.window = cfg.window;
     params.filter_duplicates = cfg.filter_duplicates ? 1 : 0;
-    params.filter_policy = BLE_HS_SCAN_FILT_NO_WL;
+    params.filter_policy = BLE_HCI_SCAN_FILT_NO_WL;
     params.limited = 0;
 
     duration = cfg.duration_ms == 0 ? BLE_HS_FOREVER : (int32_t)cfg.duration_ms;
