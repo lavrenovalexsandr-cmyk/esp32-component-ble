@@ -3,5 +3,6 @@ idf_component_register(
     INCLUDE_DIRS "."
     REQUIRES
         platform_ble
+        nvs_flash
         log
 )
