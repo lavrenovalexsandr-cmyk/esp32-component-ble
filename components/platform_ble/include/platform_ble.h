@@ -23,21 +23,25 @@ typedef struct {
     uint8_t val[6];
 } platform_ble_addr_t;
 
-/** BLE subsystem configuration. */
+/** BLE subsystem configuration. NULL device_name leaves the GAP name unchanged. */
 typedef struct {
-    bool release_classic_memory;
+    const char *device_name;
 } platform_ble_config_t;
 
 #define PLATFORM_BLE_DEFAULT_CONFIG() \
-    ((platform_ble_config_t) {        \
-        .release_classic_memory = true \
-    })
+    ((platform_ble_config_t) { .device_name = NULL })
 
 /** Initialize the BLE subsystem. NULL selects default configuration. */
 esp_err_t platform_ble_init(const platform_ble_config_t *config);
 
 /** Stop BLE activity and release resources owned by this component. */
 esp_err_t platform_ble_deinit(void);
+
+/** Return whether the BLE subsystem has been initialized. */
+bool platform_ble_is_initialized(void);
+
+/** Return whether the NimBLE host has completed synchronization. */
+bool platform_ble_is_host_synced(void);
 
 #ifdef __cplusplus
 }
