@@ -7,6 +7,7 @@
 #include "services/gap/ble_svc_gap.h"
 
 #include "platform_ble_scan.h"
+#include "platform_ble_internal.h"
 
 static const char *TAG = "platform_ble";
 
