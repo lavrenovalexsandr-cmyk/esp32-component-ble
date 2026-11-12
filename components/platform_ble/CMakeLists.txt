@@ -1,6 +1,12 @@
 idf_component_register(
+    SRCS
+        "platform_ble.c"
+        "platform_ble_scan.c"
     INCLUDE_DIRS
         "include"
+    PRIV_INCLUDE_DIRS
+        "."
     REQUIRES
-        esp_common
+        bt
+        log
 )
