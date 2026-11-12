@@ -40,8 +40,7 @@ static platform_ble_addr_type_t map_address_type(uint8_t type)
 static bool is_connectable_event(uint8_t event_type)
 {
     return event_type == BLE_HCI_ADV_RPT_EVTYPE_ADV_IND ||
-           event_type == BLE_HCI_ADV_RPT_EVTYPE_DIR_IND ||
-           event_type == BLE_HCI_ADV_RPT_EVTYPE_SCAN_IND;
+           event_type == BLE_HCI_ADV_RPT_EVTYPE_DIR_IND;
 }
 
 static int platform_ble_gap_event(struct ble_gap_event *event, void *arg)
