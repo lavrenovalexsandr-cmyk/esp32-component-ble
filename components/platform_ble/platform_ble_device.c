@@ -6,8 +6,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/portmacro.h"
 
-#define PLATFORM_BLE_DEVICE_MAX_DRIVERS 8
-
 static const char *TAG = "platform_ble_device";
 static const platform_ble_device_driver_t *s_drivers[PLATFORM_BLE_DEVICE_MAX_DRIVERS];
 static size_t s_driver_count;
