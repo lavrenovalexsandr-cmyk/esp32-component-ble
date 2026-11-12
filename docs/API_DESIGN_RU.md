@@ -49,7 +49,7 @@ Payload не копируется Core и валиден только на вр�
 
 Descriptor драйвера содержит стабильный строковый id, callback matches для определения интереса к пакету, callback on_advertisement для протокольной обработки и пользовательский context.
 
-Registry предоставляет регистрацию и снятие регистрации драйвера. Descriptor и context должны оставаться валидными до снятия регистрации. Registry поддерживает до 8 драйверов. Descriptor не копируется; его и context следует хранить со статическим временем жизни. Регистрация с пустым ID или отсутствующими callbacks возвращает ESP_ERR_INVALID_ARG; повторный ID — ESP_ERR_INVALID_STATE; переполнение — ESP_ERR_NO_MEM. Снятие отсутствующего ID возвращает ESP_ERR_NOT_FOUND.
+Registry предоставляет регистрацию и снятие регистрации драйвера. Registry поддерживает до 8 драйверов. Descriptor не копируется; descriptor и context должны иметь статическое время жизни. Снятие регистрации исключает драйвер из новых snapshots, но уже начавшаяся диспетчеризация может вызвать его callback ещё один раз. Не освобождайте память descriptor/context после unregister. Регистрация с пустым ID или отсутствующими callbacks возвращает ESP_ERR_INVALID_ARG; повторный ID — ESP_ERR_INVALID_STATE; переполнение — ESP_ERR_NO_MEM. Снятие отсутствующего ID возвращает ESP_ERR_NOT_FOUND.
 
 ## 7. Driver events
 
