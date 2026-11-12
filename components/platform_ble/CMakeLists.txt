@@ -1,0 +1,12 @@
+idf_component_register(
+    SRCS
+        "platform_ble.c"
+        "platform_ble_scan.c"
+        "platform_ble_device.c"
+    INCLUDE_DIRS
+        "include"
+    REQUIRES
+        bt
+        esp_event
+        log
+)
