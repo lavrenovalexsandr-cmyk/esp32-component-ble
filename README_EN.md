@@ -10,7 +10,7 @@ ESP32 Platform BLE is a standalone platform repository providing common BLE infr
 - BLE advertising scan.
 - A common platform representation of advertising reports.
 - An application callback for raw advertising reports.
-- A generic device-driver registration contract (designed; implementation is planned for the next stage).
+- Generic device-driver registration and advertising packet dispatch.
 - Driver-defined events without imposing a measurement schema.
 
 ## Architecture
@@ -47,11 +47,11 @@ docs/
 
 ## Current status
 
-**Stage 1 — preliminary NimBLE lifecycle and passive scanning implementation.**
+**Stages 1–2 — preliminary NimBLE lifecycle, scanning, generic driver registry, and dispatch implementation.**
 
 NimBLE initialization/shutdown, host synchronization, scan start/stop, generic advertising report conversion, and the application callback are implemented. A minimal ESP-IDF test application for ESP32-C3 is included.
 
-The implementation has not yet been built or validated on physical hardware. The driver registry and packet dispatch to registered drivers are the next stage. platform_ble_device.h currently documents the planned contract; its registration and event functions are not implemented yet.
+The implementation includes a static registry for up to 8 drivers, registration/unregistration, matches() filtering, on_advertisement() dispatch, and opaque application event delivery. Packets are dispatched to registered drivers before the raw application callback. The new registry implementation has not yet been rebuilt or validated on physical hardware.
 
 ## Build the test application
 
@@ -85,6 +85,7 @@ See [test application instructions](docs/CORE_TEST_APPLICATION_RU.md).
 4. Core provides only common BLE types and event delivery mechanisms.
 5. Public APIs should allow future active scanning, GATT, notifications, and bonding without breaking the basic contracts.
 6. Each implementation stage is validated separately on real hardware.
+7. The registry does not allocate memory dynamically; driver descriptors and contexts must have a stable lifetime.
 
 ## License
 
