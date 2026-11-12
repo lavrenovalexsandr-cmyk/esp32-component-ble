@@ -6,12 +6,12 @@ ESP32 Platform BLE is a standalone platform repository providing common BLE infr
 
 ## Purpose
 
-- BLE initialization and lifecycle management.
+- NimBLE initialization and lifecycle management.
 - BLE advertising scan.
 - A common platform representation of advertising reports.
-- Registration of independent device drivers.
-- Dispatching advertising reports to registered drivers.
-- Delivering driver-defined events without imposing a measurement schema.
+- An application callback for raw advertising reports.
+- A generic device-driver registration contract (designed; implementation is planned for the next stage).
+- Driver-defined events without imposing a measurement schema.
 
 ## Architecture
 
@@ -27,27 +27,49 @@ The BLE layer can be used without Xiaomi, MQTT, or Home Assistant.
 ~~~text
 components/
 └── platform_ble/
-    ├── CMakeLists.txt
-    └── include/
-        ├── platform_ble.h
-        ├── platform_ble_scan.h
-        └── platform_ble_device.h
+    ├── include/
+    │   ├── platform_ble.h
+    │   ├── platform_ble_scan.h
+    │   └── platform_ble_device.h
+    ├── platform_ble.c
+    ├── platform_ble_scan.c
+    └── CMakeLists.txt
+
+main/
+├── app_main.c
+└── CMakeLists.txt
 
 docs/
 ├── ARCHITECTURE_RU.md
-└── API_DESIGN_RU.md
+├── API_DESIGN_RU.md
+└── CORE_TEST_APPLICATION_RU.md
 ~~~
 
 ## Current status
 
-**Initial API design stage.**
+**Stage 1 — preliminary NimBLE lifecycle and passive scanning implementation.**
 
-This stage defines responsibility boundaries and preliminary public contracts. NimBLE implementation, the driver registry, and a test application will be added in subsequent steps after the API is agreed upon. Header declarations do not mean that functions are already implemented or ready for linking.
+NimBLE initialization/shutdown, host synchronization, scan start/stop, generic advertising report conversion, and the application callback are implemented. A minimal ESP-IDF test application for ESP32-C3 is included.
+
+The implementation has not yet been built or validated on physical hardware. The driver registry and packet dispatch to registered drivers are the next stage. platform_ble_device.h currently documents the planned contract; its registration and event functions are not implemented yet.
+
+## Build the test application
+
+ESP-IDF 6.1 and an ESP32-C3 board are required.
+
+~~~bash
+idf.py set-target esp32c3
+idf.py build
+idf.py -p PORT flash monitor
+~~~
+
+See [test application instructions](docs/CORE_TEST_APPLICATION_RU.md).
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE_RU.md)
 - [Public API design](docs/API_DESIGN_RU.md)
+- [Test application](docs/CORE_TEST_APPLICATION_RU.md)
 - [Русский README](README.md)
 
 ## Related projects
