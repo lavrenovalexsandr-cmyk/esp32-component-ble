@@ -2,7 +2,7 @@
 
 ## 1. Статус
 
-Документ фиксирует публичный контракт первого этапа. Lifecycle, scan, driver registry и event API реализованы. Проект собран для ESP32-C3; на плате подтверждены NimBLE host sync, passive scan, приём advertising reports, обработка пакетов тестовым драйвером и доставка application event. В тестовое приложение добавлены startup self-tests duplicate ID, capacity/overflow, unregister, освобождения слота и event callback; live scan проверяет фильтрацию драйвера с matches() == false. Эти проверки успешно собраны и выполнены на ESP32-C3: startup self-tests прошли, live scan подтвердил фильтрацию несовпадающего драйвера и получение advertising reports. В тестовое приложение добавлены проверки явной остановки и повторного запуска scan, finite-duration passive scan, active scan и изоляции ошибки одного driver callback; новая версия ещё требует сборки и аппаратной проверки.
+Документ фиксирует публичный контракт первого этапа. Lifecycle, scan, driver registry и event API реализованы. Проект собран для ESP32-C3; на плате подтверждены NimBLE host sync, passive scan, приём advertising reports, обработка пакетов тестовым драйвером и доставка application event. Startup self-tests registry и live-проверка matches() == false пройдены. На ESP32-C3 также проверены явная остановка и повторный запуск scan, конечная длительность, active scan, изоляция ошибки driver callback, duplicate filtering и фактическое получение Scan Response. При filter_duplicates=false тест получил 153 reports (27 уникальных сигнатур, 126 повторов), при filter_duplicates=true — 29 reports (29 уникальных, 0 повторов); active scan получил 383 reports, включая 132 Scan Response.
 
 ## 2. Общие правила
 
@@ -86,4 +86,4 @@ Dispatch драйверов, scan callback и event callback выполняют�
 5. Live scan подтвердил фильтрацию драйвера с matches() == false и получение advertising reports.
 6. Изоляция ошибки on_advertisement() одного драйвера — пройдена на ESP32-C3: первый тестовый драйвер один раз вернул ESP_FAIL, следующий продолжил обработку; итоговые счётчики обоих драйверов — 145.
 7. Scan stop/restart и active scan с конечным duration — пройдены на ESP32-C3: passive scan остановлен вручную, active scan запущен повторно и автоматически завершился (reason=0; platform_ble_scan_is_active() == false).
-8. Duplicate filtering и фактическое получение Scan Response — добавлен диагностический сценарий сравнения двух passive scan и active scan; требуется сборка и аппаратный результат. Проверка адресации и порядка байтов BLE address, повторной инициализации и deinit — также требуется.
+8. Duplicate filtering и фактическое получение Scan Response — пройдены на ESP32-C3: без фильтрации получено 153 reports (27 уникальных сигнатур, 126 повторов), с фильтрацией — 29 reports (29 уникальных, 0 повторов); active scan получил 383 reports, включая 132 Scan Response. Проверка адресации и порядка байтов BLE address, повторной инициализации и deinit — ещё требуется.
