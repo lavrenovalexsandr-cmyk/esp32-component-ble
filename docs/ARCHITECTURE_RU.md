@@ -104,7 +104,7 @@ Payload события непрозрачен для Core: передаются 
 
 Базовый этап ограничен BLE advertising scan и диспетчеризацией. Архитектура должна позволить добавить без перепроектирования базового API:
 
-- active scan (реализован и проверен); фактическое получение Scan Response проверяется отдельным тестом;
+- active scan и фактическое получение Scan Response реализованы и проверены на ESP32-C3;
 - BLE connection lifecycle;
 - GATT service/characteristic discovery;
 - GATT read/write;
@@ -119,6 +119,6 @@ Payload события непрозрачен для Core: передаются 
 2. Реализовать driver registry и dispatch зарегистрированным драйверам. (Реализовано, сборка и базовая аппаратная проверка на ESP32-C3 пройдены.)
 3. Добавить и проверить startup self-tests registry: duplicate ID, capacity/overflow, unregister, освобождение слота и event callback. Проверки выполнены на ESP32-C3: startup self-tests подтвердили duplicate ID, capacity/overflow, unregister, повторное удаление, повторное использование слота, event callback, отсутствие callback и неизвестный driver ID. Во время live scan подтверждено, что драйвер с matches() == false не получает on_advertisement(); advertising reports поступают.
 4. Проверить на плате scan stop/restart, конечный duration, active scan и изоляцию ошибки on_advertisement() одного драйвера. Пройдено на ESP32-C3: passive scan остановлен вручную, затем active scan успешно запущен и автоматически завершён (reason=0, active=0); драйвер, вернувший ESP_FAIL, и следующий драйвер обработали по 145 пакетов.
-5. Проверить duplicate filtering и фактическое получение Scan Response на реальном эфире. Диагностический сценарий добавлен в тестовое приложение: сравнение двух passive scan с filter_duplicates=false/true и отдельный active scan с подсчётом scan response; ожидается аппаратный результат.
+5. Проверить duplicate filtering и фактическое получение Scan Response на реальном эфире. Пройдено на ESP32-C3: при filter_duplicates=false получено 153 reports (27 уникальных сигнатур, 126 повторов), при filter_duplicates=true — 29 reports (29 уникальных, 0 повторов); active scan получил 383 reports, из них 132 Scan Response.
 7. Создать отдельный Xiaomi LYWSD03MMC driver и подключить его к Core.
 8. Проверить подключение второго независимого драйвера без изменения BLE Core.
