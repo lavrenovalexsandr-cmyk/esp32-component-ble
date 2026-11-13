@@ -2,7 +2,7 @@
 
 ## 1. Статус
 
-Документ фиксирует публичный контракт первого этапа. Lifecycle, scan, driver registry и event API реализованы. Проект собран для ESP32-C3; на плате подтверждены NimBLE host sync, passive scan, приём advertising reports, обработка пакетов тестовым драйвером и доставка application event. В тестовое приложение добавлены startup self-tests duplicate ID, capacity/overflow, unregister, освобождения слота и event callback; live scan проверяет фильтрацию драйвера с matches() == false. Эти проверки успешно собраны и выполнены на ESP32-C3: startup self-tests прошли, live scan подтвердил фильтрацию несовпадающего драйвера и получение advertising reports. Расширенная проверка scan lifecycle остаётся в плане.
+Документ фиксирует публичный контракт первого этапа. Lifecycle, scan, driver registry и event API реализованы. Проект собран для ESP32-C3; на плате подтверждены NimBLE host sync, passive scan, приём advertising reports, обработка пакетов тестовым драйвером и доставка application event. В тестовое приложение добавлены startup self-tests duplicate ID, capacity/overflow, unregister, освобождения слота и event callback; live scan проверяет фильтрацию драйвера с matches() == false. Эти проверки успешно собраны и выполнены на ESP32-C3: startup self-tests прошли, live scan подтвердил фильтрацию несовпадающего драйвера и получение advertising reports. В тестовое приложение добавлены проверки явной остановки и повторного запуска scan, finite-duration passive scan, active scan и изоляции ошибки одного driver callback; новая версия ещё требует сборки и аппаратной проверки.
 
 ## 2. Общие правила
 
