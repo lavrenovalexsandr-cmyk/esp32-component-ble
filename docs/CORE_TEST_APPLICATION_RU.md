@@ -81,6 +81,12 @@ Driver event from ble_test_driver: processed 100 advertising reports
 
 Результат подтверждает работу duplicate filtering и получение Scan Response. Сравнение сигнатур является диагностикой тестового приложения: учитываются BLE address, address type, длина и hash payload. Меняющийся payload и ротация случайных адресов могут влиять на статистику в других радиоусловиях.
 
+## Проверка BLE address и порядка байтов
+
+В публичном API принято единое соглашение NimBLE: `platform_ble_addr_t.val[0]` — младший (правый) октет, `val[5]` — старший (левый). Для отображения адреса используется обратный порядок индексов `val[5]:...:val[0]`. Копирование из NimBLE GAP report и передача адреса в driver event не должны менять байты.
+
+Startup self-test передаёт тестовый адрес `{0, 1, 2, 3, 4, 5}` через `platform_ble_device_emit_event()`, проверяет побайтовое совпадение в event callback и проверяет форматирование в `05:04:03:02:01:00`. После сборки и запуска ожидается сообщение `BLE address byte order test passed`. Это проверяет транспорт и форматирование тестового приложения; сопоставление с внешним BLE scanner выполняется отдельно на одном и том же устройстве.
+
 ## Результаты аппаратной проверки
 
 На ESP32-C3 успешно выполнены startup self-tests Driver Registry: invalid descriptor, duplicate ID, лимит в 8 драйверов, отказ переполнения, unregister, повторный unregister, повторное использование слота, доставка event callback, отсутствие callback и неизвестный driver ID. В live scan подтверждено, что драйвер с matches() == false не получает on_advertisement(), при этом advertising reports продолжают поступать.
