@@ -117,7 +117,8 @@ Payload события непрозрачен для Core: передаются 
 
 1. Реализовать и проверить NimBLE lifecycle и advertising scan.
 2. Реализовать driver registry и dispatch зарегистрированным драйверам. (Реализовано, сборка и базовая аппаратная проверка на ESP32-C3 пройдены.)
-3. Добавить и проверить startup self-tests registry: duplicate ID, capacity/overflow, unregister, освобождение слота и event callback. Базовые проверки добавлены в тестовое приложение; live scan также проверяет, что несовпадающий драйвер не получает on_advertisement(). Требуется сборка и запуск новой версии.
-4. Дополнить аппаратную проверку lifecycle, scan start/stop и поведения при нескольких драйверах.
-5. Создать отдельный Xiaomi LYWSD03MMC driver и подключить его к Core.
-6. Проверить, что другой драйвер можно подключить без изменения BLE Core.
+3. Добавить и проверить startup self-tests registry: duplicate ID, capacity/overflow, unregister, освобождение слота и event callback. Проверки выполнены на ESP32-C3: startup self-tests подтвердили duplicate ID, capacity/overflow, unregister, повторное удаление, повторное использование слота, event callback, отсутствие callback и неизвестный driver ID. Во время live scan подтверждено, что драйвер с matches() == false не получает on_advertisement(); advertising reports поступают.
+5. Дополнить аппаратную проверку lifecycle: scan stop/restart, конечный duration, active scan и duplicate filtering.
+6. Отдельно проверить изоляцию ошибки on_advertisement() одного драйвера.
+7. Создать отдельный Xiaomi LYWSD03MMC driver и подключить его к Core.
+8. Проверить подключение второго независимого драйвера без изменения BLE Core.
