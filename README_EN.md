@@ -47,11 +47,11 @@ docs/
 
 ## Current status
 
-**Stages 1–2 — preliminary NimBLE lifecycle, scanning, generic driver registry, and dispatch implementation.**
+**Stages 1–2 — NimBLE lifecycle, scanning, generic driver registry, and dispatch are implemented and validated on ESP32-C3 hardware.**
 
-NimBLE initialization/shutdown, host synchronization, scan start/stop, generic advertising report conversion, and the application callback are implemented. A minimal ESP-IDF test application for ESP32-C3 is included.
+NimBLE initialization/shutdown, host synchronization, scan start/stop, generic advertising report conversion, and the application callback are implemented. The ESP32-C3 test application exercises the platform API and driver registry.
 
-The implementation includes a static registry for up to 8 drivers, registration/unregistration, matches() filtering, on_advertisement() dispatch, and opaque application event delivery. Packets are dispatched to registered drivers before the raw application callback. The new registry implementation has not yet been rebuilt or validated on physical hardware.
+The implementation includes a static registry for up to 8 drivers, registration/unregistration, matches() filtering, on_advertisement() dispatch, and opaque application event delivery. Packets are dispatched to registered drivers before the raw application callback. Hardware tests on ESP32-C3 cover registry self-tests, scan lifecycle, duplicate filtering, active scan responses, driver error isolation, address byte order, and repeated init/deinit lifecycle. These tests do not imply validation on every ESP32 target.
 
 ## Build the test application
 
