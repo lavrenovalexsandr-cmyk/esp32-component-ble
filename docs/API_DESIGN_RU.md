@@ -84,6 +84,6 @@ Dispatch драйверов, scan callback и event callback выполняют�
 3. Startup self-tests повторной регистрации ID, capacity/overflow, unregister, повторного unregister и повторного использования слота — пройдены на ESP32-C3.
 4. Проверки event callback, отсутствующего callback и неизвестного driver ID — пройдены.
 5. Live scan подтвердил фильтрацию драйвера с matches() == false и получение advertising reports.
-6. Изоляция ошибки on_advertisement() одного драйвера пока отдельно не проверялась.
-7. Проверка scan stop/restart, конечного duration, active scan и duplicate filtering — требуется.
-8. Проверка адресации и порядка байтов BLE address, повторной инициализации и deinit — требуется.
+6. Изоляция ошибки on_advertisement() одного драйвера — пройдена на ESP32-C3: первый тестовый драйвер один раз вернул ESP_FAIL, следующий продолжил обработку; итоговые счётчики обоих драйверов — 145.
+7. Scan stop/restart и active scan с конечным duration — пройдены на ESP32-C3: passive scan остановлен вручную, active scan запущен повторно и автоматически завершился (reason=0; platform_ble_scan_is_active() == false).
+8. Duplicate filtering, фактическое получение Scan Response, проверка адресации и порядка байтов BLE address, повторная инициализация и deinit — требуют отдельной проверки.
