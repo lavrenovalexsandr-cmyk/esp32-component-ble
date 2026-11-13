@@ -45,6 +45,12 @@ platform_ble_adv_packet_t содержит BLE address, address type, RSSI, ук
 
 Payload не копируется Core и валиден только на время callback. Core не разбирает AD structures и не интерпретирует manufacturer/service data.
 
+### 5.1 Соглашение о BLE address и порядке байтов
+
+`platform_ble_addr_t.val` хранит шесть октетов в каноническом порядке NimBLE без перестановки при копировании из GAP report. `val[0]` — младший (правый) октет адреса, `val[5]` — старший (левый). Поэтому для привычного отображения MAC/BLE address используется порядок `val[5]:val[4]:val[3]:val[2]:val[1]:val[0]`. Например, массив `{0, 1, 2, 3, 4, 5}` отображается как `05:04:03:02:01:00`.
+
+Это соглашение едино для advertising packet и driver event. `platform_ble_device_emit_event()` копирует адрес побайтно, не меняя порядок. При сравнении адресов внутри кода следует сравнивать все шесть байтов в исходном порядке; разворачивать массив нужно только при форматировании для человека. Address type хранится отдельно и является частью идентичности адреса.
+
 ## 6. Generic driver API — platform_ble_device.h
 
 Descriptor драйвера содержит стабильный строковый id, callback matches для определения интереса к пакету, callback on_advertisement для протокольной обработки и пользовательский context.
