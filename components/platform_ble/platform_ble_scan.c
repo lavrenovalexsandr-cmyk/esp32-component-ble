@@ -226,3 +226,17 @@ bool platform_ble_scan_is_active(void)
 {
     return s_scan_active;
 }
+
+
+/*
+ * Reset runtime scan state after the NimBLE host has stopped.
+ * The application callback and its context intentionally survive BLE
+ * deinitialization so they remain configured across init/deinit cycles.
+ */
+void platform_ble_scan_reset(void)
+{
+    s_scan_requested = false;
+    s_scan_active = false;
+    s_has_pending_config = false;
+    memset(&s_pending_config, 0, sizeof(s_pending_config));
+}
