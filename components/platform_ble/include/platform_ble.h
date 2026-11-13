@@ -18,7 +18,12 @@ typedef enum {
     PLATFORM_BLE_ADDR_ANONYMOUS = 4,
 } platform_ble_addr_type_t;
 
-/** BLE address in the byte order supplied by the platform API. */
+/**
+ * BLE address in canonical NimBLE byte order: val[0] is the least
+ * significant (rightmost) octet and val[5] is the most significant
+ * (leftmost) octet. Format for display as val[5]:...:val[0].
+ * The six bytes are copied unchanged from the NimBLE address.
+ */
 typedef struct {
     uint8_t val[6];
 } platform_ble_addr_t;
