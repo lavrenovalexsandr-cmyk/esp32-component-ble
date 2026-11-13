@@ -13,6 +13,7 @@ extern "C" {
 
 /**
  * Generic BLE advertising report.
+ * address.val uses the byte order documented in platform_ble.h.
  * data is a temporary buffer valid only during the callback.
  */
 typedef struct {
