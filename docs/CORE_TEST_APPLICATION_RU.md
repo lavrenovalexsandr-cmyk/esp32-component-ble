@@ -64,5 +64,5 @@ Driver event from ble_test_driver: processed 100 advertising reports
 
 - Тестовый driver registry проверяет базовую регистрацию, dispatch и доставку событий; отдельные unit-тесты граничных случаев registry ещё не добавлены.
 - GATT client, соединения, bonding и notifications пока не реализованы.
-- Тест подтверждает обнаружение advertising reports и базовый маршрут dispatch/event.
+- Аппаратная проверка на ESP32-C3 подтвердила синхронизацию NimBLE host, запуск passive scan, получение advertising reports, обработку пакетов через `ble_test_driver` и доставку application event с количеством обработанных пакетов (после каждых 100 reports).
 - До сборки и проверки на реальной плате реализация считается предварительной.
