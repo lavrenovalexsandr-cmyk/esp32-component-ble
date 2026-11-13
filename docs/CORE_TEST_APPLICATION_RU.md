@@ -93,9 +93,36 @@ Startup self-test передаёт тестовый адрес `{0, 1, 2, 3, 4, 
 
 Ранее также подтверждены NimBLE host sync, passive scan, обработка пакетов через `ble_test_driver` и доставка application event после каждых 100 reports. В последнем сценарии подтверждены ручной stop и restart scan, active scan с конечной длительностью и изоляция ошибки драйвера: `ble_test_failing_driver` вернул ESP_FAIL, после чего `ble_test_after_error_driver` продолжил обработку; оба счётчика завершили тест со значением 145.
 
+## Проверка повторной инициализации и deinit
+
+После завершения основных scan-тестов приложение автоматически выполняет lifecycle-сценарий:
+
+1. Останавливает первоначальный BLE экземпляр и проверяет, что initialized, host_synced и scan_active сброшены.
+2. Повторно инициализирует BLE, ожидает NimBLE host sync, запускает continuous scan, проверяет поступление пакетов и останавливает scan вручную.
+3. Выполняет deinit и проверяет сброс состояния.
+4. Ещё раз инициализирует BLE, запускает finite scan на 3 секунды и проверяет автоматическое завершение.
+5. Выполняет финальный deinit и проверяет сброс состояния.
+
+Тест ожидает host sync не более 5 секунд после каждого init. Между этапами предусмотрены короткие паузы для завершения процедур NimBLE. Успешный сценарий заканчивается строкой:
+
+~~~text
+BLE init/deinit lifecycle tests passed
+~~~
+
+Аппаратная проверка на ESP32-C3 пройдена. В логе подтверждены остановка NimBLE host task, успешный deinit и завершение всего lifecycle-сценария.
+
+Для сокращённого мониторинга lifecycle-теста можно использовать:
+
+~~~bash
+idf.py -p PORT monitor | grep --line-buffered -E "BLE lifecycle:|BLE init/deinit|NimBLE host task stopped|NimBLE stopped|assert failed|Guru Meditation|abort\\("
+~~~
+
+При deinit runtime-состояние scan сбрасывается, но callback сканирования и его context сохраняются. Поэтому при повторном init приложение может продолжать получать advertising reports без повторной регистрации callback. Driver registry и event callback также сохраняются.
+
 ## Ограничения текущего этапа
 
 - Отдельные unit-тесты в тестовом framework пока не добавлены; проверки Registry реализованы как startup self-tests тестового приложения.
 - Scan stop/restart, конечный duration, active scan и изоляция ошибки callback проверены на ESP32-C3.
 - Duplicate filtering и фактическое получение Scan Response проверены на ESP32-C3: 153 reports / 126 повторов без фильтра, 29 reports / 0 повторов с фильтром; active scan получил 132 Scan Response.
+- BLE address byte order, повторная инициализация и deinit проверены на ESP32-C3.
 - GATT client, соединения, bonding и notifications пока не реализованы.
