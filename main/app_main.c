@@ -159,8 +159,12 @@ static void registry_test_event_callback(
 {
     (void)context;
 
+    static const uint8_t expected_address[6] = {0, 1, 2, 3, 4, 5};
+
     if (event != NULL &&
         strcmp(event->driver_id, "registry_test_0") == 0 &&
+        memcmp(event->address.val, expected_address,
+               sizeof(expected_address)) == 0 &&
         event->event_id == 0xA5 &&
         event->payload != NULL &&
         event->payload_size == sizeof(uint32_t) &&
@@ -199,6 +203,16 @@ static void run_registry_self_tests(void)
         "registry_test_0", &test_address, 0xA5,
         &test_payload, sizeof(test_payload)));
     ESP_ERROR_CHECK(s_registry_event_count == 1 ? ESP_OK : ESP_FAIL);
+
+    char formatted_address[18];
+    snprintf(formatted_address, sizeof(formatted_address),
+             "%02X:%02X:%02X:%02X:%02X:%02X",
+             test_address.val[5], test_address.val[4],
+             test_address.val[3], test_address.val[2],
+             test_address.val[1], test_address.val[0]);
+    ESP_ERROR_CHECK(strcmp(formatted_address, "05:04:03:02:01:00") == 0
+                        ? ESP_OK : ESP_FAIL);
+    ESP_LOGI(TAG, "BLE address byte order test passed: %s", formatted_address);
 
     ESP_ERROR_CHECK(platform_ble_device_set_event_callback(NULL, NULL));
     ESP_ERROR_CHECK(platform_ble_device_emit_event(
