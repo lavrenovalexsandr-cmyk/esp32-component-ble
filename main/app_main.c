@@ -5,6 +5,8 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #include "platform_ble.h"
 #include "platform_ble_device.h"
@@ -15,6 +17,8 @@ static uint32_t s_test_driver_packet_count;
 static uint32_t s_registry_event_count;
 static uint32_t s_nonmatching_callback_count;
 static bool s_nonmatching_filter_verified;
+static uint32_t s_after_error_driver_count;
+static uint32_t s_failing_driver_call_count;
 
 static bool registry_test_matches(
     const platform_ble_adv_packet_t *packet,
@@ -189,6 +193,46 @@ static const platform_ble_device_driver_t s_test_driver = {
     .context = NULL,
 };
 
+static bool s_failing_driver_failed_once;
+
+static esp_err_t failing_driver_on_advertisement(
+    const platform_ble_adv_packet_t *packet,
+    void *context)
+{
+    (void)packet;
+    bool *failed_once = context;
+    ++s_failing_driver_call_count;
+    if (!*failed_once) {
+        *failed_once = true;
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
+static const platform_ble_device_driver_t s_failing_driver = {
+    .id = "ble_test_failing_driver",
+    .matches = test_driver_matches,
+    .on_advertisement = failing_driver_on_advertisement,
+    .context = &s_failing_driver_failed_once,
+};
+
+static esp_err_t after_error_driver_on_advertisement(
+    const platform_ble_adv_packet_t *packet,
+    void *context)
+{
+    (void)packet;
+    (void)context;
+    ++s_after_error_driver_count;
+    return ESP_OK;
+}
+
+static const platform_ble_device_driver_t s_after_error_driver = {
+    .id = "ble_test_after_error_driver",
+    .matches = test_driver_matches,
+    .on_advertisement = after_error_driver_on_advertisement,
+    .context = NULL,
+};
+
 static const platform_ble_device_driver_t s_nonmatching_driver = {
     .id = "ble_test_nonmatching_driver",
     .matches = nonmatching_driver_matches,
@@ -243,6 +287,40 @@ static void on_driver_event(
              event->driver_id, (unsigned long)count);
 }
 
+static void scan_lifecycle_test_task(void *arg)
+{
+    (void)arg;
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    if (platform_ble_scan_is_active()) {
+        ESP_ERROR_CHECK(platform_ble_scan_stop());
+        ESP_LOGI(TAG, "Scan lifecycle: explicit stop requested");
+    } else {
+        ESP_LOGE(TAG, "Scan lifecycle: scan was not active before stop");
+    }
+
+    /* Allow NimBLE to deliver DISC_COMPLETE before starting a new procedure. */
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    platform_ble_scan_config_t active_config =
+        PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
+    active_config.active = true;
+    active_config.duration_ms = 3000;
+
+    ESP_ERROR_CHECK(platform_ble_scan_start(&active_config));
+    ESP_LOGI(TAG, "Scan lifecycle: active scan restarted (3 seconds)");
+
+    vTaskDelay(pdMS_TO_TICKS(3500));
+    ESP_LOGI(TAG, "Scan lifecycle: finite active scan complete, active=%u",
+             platform_ble_scan_is_active());
+    ESP_LOGI(TAG, "Driver error isolation: failing=%lu, following=%lu",
+             (unsigned long)s_failing_driver_call_count,
+             (unsigned long)s_after_error_driver_count);
+    ESP_ERROR_CHECK(s_failing_driver_call_count > 0 &&
+                    s_after_error_driver_count > 0 ? ESP_OK : ESP_FAIL);
+    vTaskDelete(NULL);
+}
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "Starting ESP32 Platform BLE test");
@@ -257,11 +335,18 @@ void app_main(void)
     ESP_ERROR_CHECK(platform_ble_device_set_event_callback(on_driver_event, NULL));
     ESP_ERROR_CHECK(platform_ble_device_register(&s_test_driver));
     ESP_ERROR_CHECK(platform_ble_device_register(&s_nonmatching_driver));
+    ESP_ERROR_CHECK(platform_ble_device_register(&s_failing_driver));
+    ESP_ERROR_CHECK(platform_ble_device_register(&s_after_error_driver));
     ESP_ERROR_CHECK(platform_ble_init(NULL));
 
     platform_ble_scan_config_t scan_config =
         PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
+    scan_config.duration_ms = 10000;
 
     ESP_ERROR_CHECK(platform_ble_scan_start(&scan_config));
-    ESP_LOGI(TAG, "BLE scan requested");
+    ESP_LOGI(TAG, "BLE scan requested (passive, 10 seconds)");
+
+    BaseType_t task_result = xTaskCreate(
+        scan_lifecycle_test_task, "ble_scan_test", 3072, NULL, 5, NULL);
+    ESP_ERROR_CHECK(task_result == pdPASS ? ESP_OK : ESP_FAIL);
 }
