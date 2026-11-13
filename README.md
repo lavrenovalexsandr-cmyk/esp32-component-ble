@@ -55,6 +55,10 @@ docs/
 
 Аппаратная проверка duplicate filtering и Scan Response пройдена на ESP32-C3. При passive scan с filter_duplicates=false получено 153 reports: 27 уникальных сигнатур и 126 повторов. При filter_duplicates=true получено 29 reports и 0 повторов. Во время active scan получено 383 reports, включая 132 Scan Response. Результаты подтверждают работу duplicate filtering и приём Scan Response через общий advertising callback.
 
+Повторная инициализация и остановка BLE также проверены на ESP32-C3. Успешно выполнена последовательность: остановка первоначального экземпляра BLE, повторный init, continuous scan с ручной остановкой, deinit, ещё один init, finite scan на 3 секунды с автоматическим завершением и финальный deinit. После каждого deinit проверялись состояния initialized=false, host_synced=false и scan_active=false. В логе подтверждены остановка NimBLE host task и успешное завершение сценария: `BLE init/deinit lifecycle tests passed`.
+
+При deinit runtime-состояние сканирования сбрасывается, а зарегистрированный scan callback и его context сохраняются для последующего init.
+
 ## Производительность dispatch
 
 Текущая реализация последовательно проверяет advertising packet всеми зарегистрированными драйверами. При установленном лимите в 8 драйверов это простой и предсказуемый подход; преждевременно вводить индексирование или сложную систему фильтров не требуется.
