@@ -60,9 +60,15 @@ Driver event from ble_test_driver: processed 100 advertising reports
 
 Для нагрузочных проверок следует отключить логирование каждого пакета или ограничить его частоту (например, выводить агрегированную статистику раз в заданное число пакетов). В реальных драйверах не следует логировать каждый принятый advertising report без необходимости.
 
+## Результаты аппаратной проверки
+
+На ESP32-C3 успешно выполнены startup self-tests Driver Registry: invalid descriptor, duplicate ID, лимит в 8 драйверов, отказ переполнения, unregister, повторный unregister, повторное использование слота, доставка event callback, отсутствие callback и неизвестный driver ID. В live scan подтверждено, что драйвер с matches() == false не получает on_advertisement(), при этом advertising reports продолжают поступать.
+
+Ранее также подтверждены NimBLE host sync, passive scan, обработка пакетов через `ble_test_driver` и доставка application event после каждых 100 reports.
+
 ## Ограничения текущего этапа
 
-- Тестовый driver registry проверяет базовую регистрацию, dispatch и доставку событий; отдельные unit-тесты граничных случаев registry ещё не добавлены.
+- Отдельные unit-тесты в тестовом framework пока не добавлены; проверки Registry реализованы как startup self-tests тестового приложения.
+- Scan stop/restart, конечный duration, active scan и duplicate filtering требуют дополнительной аппаратной проверки.
+- Изоляция ошибки on_advertisement() одного драйвера пока отдельно не проверялась.
 - GATT client, соединения, bonding и notifications пока не реализованы.
-- Аппаратная проверка на ESP32-C3 подтвердила синхронизацию NimBLE host, запуск passive scan, получение advertising reports, обработку пакетов через `ble_test_driver` и доставку application event с количеством обработанных пакетов (после каждых 100 reports).
-- До сборки и проверки на реальной плате реализация считается предварительной.
