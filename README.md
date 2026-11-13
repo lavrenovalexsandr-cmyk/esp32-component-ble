@@ -119,7 +119,7 @@ git push origin v0.1.0
 ## Связанные проекты
 
 - [ESP32 Platform Core](https://github.com/lavrenovalexsandr-cmyk/esp32-platform-core)
-- [ESP32 Xiaomi LYWSD03MMC firmware (legacy)](https://github.com/lavrenovalexsandr-cmyk/esp32_mqtt_xiaomi_lywsd03)
+- [ESP32 Xiaomi LYWSD03MMC firmware (legacy)](https://github.com/lavrenovalexsandr-cmyk/esp32-firmware-xiaomi-lywsd03)
 
 ## Принципы
 
