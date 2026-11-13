@@ -97,7 +97,7 @@ The tag should point to a tested commit on `main`. A successful CI build confirm
 ## Related projects
 
 - [ESP32 Platform Core](https://github.com/lavrenovalexsandr-cmyk/esp32-platform-core)
-- [Legacy ESP32 Xiaomi LYWSD03MMC firmware](https://github.com/lavrenovalexsandr-cmyk/esp32_mqtt_xiaomi_lywsd03)
+- [Legacy ESP32 Xiaomi LYWSD03MMC firmware](https://github.com/lavrenovalexsandr-cmyk/esp32-firmware-xiaomi-lywsd03)
 
 ## Design principles
 
