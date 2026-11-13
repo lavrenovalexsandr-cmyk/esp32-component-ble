@@ -19,6 +19,7 @@ static void platform_ble_host_task(void *arg)
     (void)arg;
     ESP_LOGI(TAG, "NimBLE host task started");
     nimble_port_run();
+    ESP_LOGI(TAG, "NimBLE host task stopped");
     nimble_port_freertos_deinit();
 }
 
@@ -48,6 +49,9 @@ esp_err_t platform_ble_init(const platform_ble_config_t *config)
         return ESP_ERR_INVALID_STATE;
     }
 
+    s_host_synced = false;
+    platform_ble_scan_reset();
+
     esp_err_t err = nimble_port_init();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "nimble_port_init failed: %s", esp_err_to_name(err));
@@ -62,7 +66,11 @@ esp_err_t platform_ble_init(const platform_ble_config_t *config)
         int rc = ble_svc_gap_device_name_set(config->device_name);
         if (rc != 0) {
             ESP_LOGE(TAG, "Failed to set BLE device name: %d", rc);
-            nimble_port_deinit();
+            esp_err_t deinit_err = nimble_port_deinit();
+            if (deinit_err != ESP_OK) {
+                ESP_LOGE(TAG, "nimble_port_deinit after GAP name failure: %s",
+                         esp_err_to_name(deinit_err));
+            }
             return ESP_FAIL;
         }
     }
@@ -94,9 +102,22 @@ esp_err_t platform_ble_deinit(void)
         return ESP_FAIL;
     }
 
-    nimble_port_deinit();
-    s_initialized = false;
+    /*
+     * nimble_port_stop() waits until the host stop procedure and its final
+     * event have been processed. No more GAP callbacks can run after it
+     * returns, so scan state can now be reset safely.
+     */
     s_host_synced = false;
+    platform_ble_scan_reset();
+
+    esp_err_t deinit_err = nimble_port_deinit();
+    if (deinit_err != ESP_OK) {
+        ESP_LOGE(TAG, "nimble_port_deinit failed: %s",
+                 esp_err_to_name(deinit_err));
+        return deinit_err;
+    }
+
+    s_initialized = false;
     ESP_LOGI(TAG, "NimBLE stopped");
     return ESP_OK;
 }
