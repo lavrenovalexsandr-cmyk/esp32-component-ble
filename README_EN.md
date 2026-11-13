@@ -65,6 +65,28 @@ idf.py -p PORT flash monitor
 
 See [test application instructions](docs/CORE_TEST_APPLICATION_RU.md).
 
+## CI builds and releases
+
+The GitHub Actions workflow `.github/workflows/esp-idf-build.yml` builds the ESP32-C3 test firmware with ESP-IDF 6.1 on pull requests to `main`, manual dispatch, and pushes of Git tags matching `v*.*.*`.
+
+When a tag such as `v0.1.0` is pushed, the workflow builds the firmware and publishes a GitHub Release with generated release notes and these files:
+
+- `esp32_platform_ble_test-ota.bin` — application image for OTA;
+- `bootloader.bin` — bootloader;
+- `partition-table.bin` — partition table;
+- `esp32_platform_ble_test-full.bin` — merged image for full flashing.
+
+The files are also uploaded as workflow artifacts (14-day retention). Pull requests and manual runs build the firmware but do not publish a release.
+
+To publish a version, create and push a tag from the local repository:
+
+~~~bash
+git tag v0.1.0
+git push origin v0.1.0
+~~~
+
+The tag should point to a tested commit on `main`. A successful CI build confirms that the ESP32-C3 test application builds; it does not replace BLE hardware validation.
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE_RU.md)
