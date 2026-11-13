@@ -87,6 +87,28 @@ idf.py -p PORT flash monitor
 
 Подробности: [Тестовое приложение](docs/CORE_TEST_APPLICATION_RU.md).
 
+## Сборка и релизы
+
+GitHub Actions workflow `.github/workflows/esp-idf-build.yml` собирает тестовую прошивку для ESP32-C3 на ESP-IDF 6.1 при Pull Request в `main`, по ручному запуску и при push Git-тега формата `v*.*.*`.
+
+При создании тега, например `v0.1.0`, workflow собирает прошивку и публикует GitHub Release с автоматически сформированными release notes и файлами:
+
+- `esp32_platform_ble_test-ota.bin` — образ приложения для OTA;
+- `bootloader.bin` — bootloader;
+- `partition-table.bin` — таблица разделов;
+- `esp32_platform_ble_test-full.bin` — объединённый образ для полной прошивки.
+
+Артефакты также прикладываются к запуску GitHub Actions (срок хранения — 14 дней). Публикация релиза выполняется только для тегов вида `vMAJOR.MINOR.PATCH`; Pull Request и ручной запуск выполняют сборку без публикации релиза.
+
+Чтобы выпустить версию, создайте и отправьте тег из локального репозитория:
+
+~~~bash
+git tag v0.1.0
+git push origin v0.1.0
+~~~
+
+Тег должен указывать на проверенный commit в `main`. Успешная CI-сборка подтверждает сборку тестового приложения для ESP32-C3, но не заменяет аппаратные испытания BLE на устройстве.
+
 ## Документация
 
 - [Архитектура](docs/ARCHITECTURE_RU.md)
