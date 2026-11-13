@@ -14,7 +14,11 @@ extern "C" {
 /** Maximum number of drivers that can be registered simultaneously. */
 #define PLATFORM_BLE_DEVICE_MAX_DRIVERS 8
 
-/** Opaque driver event; payload is valid only during the event callback. */
+/**
+ * Opaque driver event; payload is valid only during the event callback.
+ * address bytes use the same canonical order as platform_ble_addr_t and
+ * are copied unchanged from the address supplied to emit_event().
+ */
 typedef struct {
     const char *driver_id;
     platform_ble_addr_t address;
