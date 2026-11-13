@@ -391,6 +391,88 @@ static void on_driver_event(
              event->driver_id, (unsigned long)count);
 }
 
+static esp_err_t wait_for_host_sync(uint32_t timeout_ms)
+{
+    const TickType_t poll_interval = pdMS_TO_TICKS(50);
+    uint32_t elapsed_ms = 0;
+
+    while (elapsed_ms < timeout_ms) {
+        if (platform_ble_is_host_synced()) {
+            return ESP_OK;
+        }
+        vTaskDelay(poll_interval);
+        elapsed_ms += 50;
+    }
+
+    return platform_ble_is_host_synced() ? ESP_OK : ESP_ERR_TIMEOUT;
+}
+
+static void run_ble_reinit_lifecycle_tests(void)
+{
+    ESP_LOGI(TAG, "BLE lifecycle: stopping initial BLE instance");
+
+    ESP_ERROR_CHECK(platform_ble_deinit());
+    ESP_ERROR_CHECK(!platform_ble_is_initialized() &&
+                    !platform_ble_is_host_synced() &&
+                    !platform_ble_scan_is_active()
+                        ? ESP_OK : ESP_FAIL);
+
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    ESP_LOGI(TAG, "BLE lifecycle: initializing second BLE instance");
+    ESP_ERROR_CHECK(platform_ble_init(NULL));
+    ESP_ERROR_CHECK(wait_for_host_sync(5000));
+
+    uint32_t packets_before = s_test_driver_packet_count;
+    platform_ble_scan_config_t scan_config =
+        PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
+
+    ESP_ERROR_CHECK(platform_ble_scan_start(&scan_config));
+    ESP_LOGI(TAG, "BLE lifecycle: continuous scan started");
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    ESP_ERROR_CHECK(platform_ble_scan_is_active() ? ESP_OK : ESP_FAIL);
+    ESP_ERROR_CHECK(platform_ble_scan_stop());
+    ESP_LOGI(TAG, "BLE lifecycle: continuous scan stop requested");
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    ESP_ERROR_CHECK(!platform_ble_scan_is_active() ? ESP_OK : ESP_FAIL);
+    ESP_ERROR_CHECK(s_test_driver_packet_count > packets_before
+                        ? ESP_OK : ESP_FAIL);
+
+    ESP_LOGI(TAG, "BLE lifecycle: deinitializing second BLE instance");
+    ESP_ERROR_CHECK(platform_ble_deinit());
+    ESP_ERROR_CHECK(!platform_ble_is_initialized() &&
+                    !platform_ble_is_host_synced() &&
+                    !platform_ble_scan_is_active()
+                        ? ESP_OK : ESP_FAIL);
+
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    ESP_LOGI(TAG, "BLE lifecycle: initializing third BLE instance");
+    ESP_ERROR_CHECK(platform_ble_init(NULL));
+    ESP_ERROR_CHECK(wait_for_host_sync(5000));
+
+    packets_before = s_test_driver_packet_count;
+    scan_config.duration_ms = 3000;
+    ESP_ERROR_CHECK(platform_ble_scan_start(&scan_config));
+    ESP_LOGI(TAG, "BLE lifecycle: finite scan started (3 seconds)");
+    vTaskDelay(pdMS_TO_TICKS(3500));
+
+    ESP_ERROR_CHECK(!platform_ble_scan_is_active() ? ESP_OK : ESP_FAIL);
+    ESP_ERROR_CHECK(s_test_driver_packet_count > packets_before
+                        ? ESP_OK : ESP_FAIL);
+
+    ESP_LOGI(TAG, "BLE lifecycle: deinitializing third BLE instance");
+    ESP_ERROR_CHECK(platform_ble_deinit());
+    ESP_ERROR_CHECK(!platform_ble_is_initialized() &&
+                    !platform_ble_is_host_synced() &&
+                    !platform_ble_scan_is_active()
+                        ? ESP_OK : ESP_FAIL);
+
+    ESP_LOGI(TAG, "BLE init/deinit lifecycle tests passed");
+}
+
 static void scan_lifecycle_test_task(void *arg)
 {
     (void)arg;
@@ -462,6 +544,8 @@ static void scan_lifecycle_test_task(void *arg)
     s_scan_test_phase = SCAN_TEST_PHASE_NONE;
 
     ESP_LOGI(TAG, "BLE scan tests finished");
+
+    run_ble_reinit_lifecycle_tests();
     vTaskDelete(NULL);
 }
 
