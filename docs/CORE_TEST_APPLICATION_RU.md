@@ -66,14 +66,20 @@ Driver event from ble_test_driver: processed 100 advertising reports
 
 ## Проверка duplicate filtering и Scan Response
 
-В тестовое приложение добавлен следующий сценарий (результат аппаратной проверки ещё не получен):
+В тестовом приложении реализован и проверен на ESP32-C3 следующий сценарий:
 
 1. Passive scan на 6 секунд с `filter_duplicates=false`.
 2. Подсчёт общего количества reports и повторов одинаковой сигнатуры: BLE address + address type + hash advertising payload.
 3. Passive scan на 6 секунд с `filter_duplicates=true` и теми же счётчиками.
 4. Active scan на 10 секунд с отдельным подсчётом reports, помеченных `scan_response=true`.
 
-В логах ожидаются строки `Duplicate filter disabled`, `Duplicate filter enabled` и `Active scan / Scan Response`. Сравнивать результаты нужно в условиях стабильного набора рекламирующих устройств: меняющийся payload и ротация случайных адресов влияют на число повторов. Для проверки Scan Response поблизости должно быть scannable BLE-устройство, которое действительно передаёт Scan Response; нулевой счётчик без такого устройства не означает ошибку Core.
+Фактический результат:
+
+- `filter_duplicates=false`: 153 reports, 27 уникальных сигнатур, 126 повторов;
+- `filter_duplicates=true`: 29 reports, 29 уникальных сигнатур, 0 повторов;
+- active scan: 383 reports, 46 уникальных сигнатур, 337 повторов, 132 Scan Response.
+
+Результат подтверждает работу duplicate filtering и получение Scan Response. Сравнение сигнатур является диагностикой тестового приложения: учитываются BLE address, address type, длина и hash payload. Меняющийся payload и ротация случайных адресов могут влиять на статистику в других радиоусловиях.
 
 ## Результаты аппаратной проверки
 
@@ -85,5 +91,5 @@ Driver event from ble_test_driver: processed 100 advertising reports
 
 - Отдельные unit-тесты в тестовом framework пока не добавлены; проверки Registry реализованы как startup self-tests тестового приложения.
 - Scan stop/restart, конечный duration, active scan и изоляция ошибки callback проверены на ESP32-C3.
-- Duplicate filtering и фактическое получение Scan Response: диагностический сценарий добавлен, ожидается аппаратная проверка с подходящими рекламными устройствами.
+- Duplicate filtering и фактическое получение Scan Response проверены на ESP32-C3: 153 reports / 126 повторов без фильтра, 29 reports / 0 повторов с фильтром; active scan получил 132 Scan Response.
 - GATT client, соединения, bonding и notifications пока не реализованы.
