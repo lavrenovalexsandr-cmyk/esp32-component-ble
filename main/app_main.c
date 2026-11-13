@@ -20,6 +20,95 @@ static bool s_nonmatching_filter_verified;
 static uint32_t s_after_error_driver_count;
 static uint32_t s_failing_driver_call_count;
 
+typedef enum {
+    SCAN_TEST_PHASE_NONE = 0,
+    SCAN_TEST_PHASE_DUPLICATES_OFF,
+    SCAN_TEST_PHASE_DUPLICATES_ON,
+    SCAN_TEST_PHASE_ACTIVE_SCAN,
+} scan_test_phase_t;
+
+#define SCAN_TEST_UNIQUE_MAX 128
+
+typedef struct {
+    platform_ble_addr_t address;
+    platform_ble_addr_type_t address_type;
+    uint32_t payload_hash;
+    size_t payload_len;
+} scan_test_signature_t;
+
+typedef struct {
+    uint32_t reports;
+    uint32_t scan_responses;
+    uint32_t unique_signatures;
+    uint32_t duplicate_signatures;
+} scan_test_stats_t;
+
+static volatile scan_test_phase_t s_scan_test_phase;
+static scan_test_stats_t s_scan_test_stats;
+static scan_test_signature_t s_scan_test_signatures[SCAN_TEST_UNIQUE_MAX];
+
+static void scan_test_begin(scan_test_phase_t phase)
+{
+    memset(&s_scan_test_stats, 0, sizeof(s_scan_test_stats));
+    memset(s_scan_test_signatures, 0, sizeof(s_scan_test_signatures));
+    s_scan_test_phase = phase;
+}
+
+static uint32_t scan_test_payload_hash(const uint8_t *data, size_t length)
+{
+    uint32_t hash = 2166136261U;
+    for (size_t i = 0; i < length; ++i) {
+        hash = (hash ^ data[i]) * 16777619U;
+    }
+    return hash;
+}
+
+static void scan_test_record_packet(const platform_ble_adv_packet_t *packet)
+{
+    if (s_scan_test_phase == SCAN_TEST_PHASE_NONE) {
+        return;
+    }
+
+    ++s_scan_test_stats.reports;
+    if (packet->scan_response) {
+        ++s_scan_test_stats.scan_responses;
+    }
+
+    uint32_t hash = scan_test_payload_hash(packet->data, packet->data_len);
+    for (size_t i = 0; i < s_scan_test_stats.unique_signatures; ++i) {
+        const scan_test_signature_t *signature = &s_scan_test_signatures[i];
+        if (signature->address_type == packet->address_type &&
+            memcmp(signature->address.val, packet->address.val,
+                   sizeof(packet->address.val)) == 0 &&
+            signature->payload_hash == hash &&
+            signature->payload_len == packet->data_len) {
+            ++s_scan_test_stats.duplicate_signatures;
+            return;
+        }
+    }
+
+    if (s_scan_test_stats.unique_signatures < SCAN_TEST_UNIQUE_MAX) {
+        scan_test_signature_t *signature =
+            &s_scan_test_signatures[s_scan_test_stats.unique_signatures++];
+        signature->address = packet->address;
+        signature->address_type = packet->address_type;
+        signature->payload_hash = hash;
+        signature->payload_len = packet->data_len;
+    }
+}
+
+static void scan_test_log_stats(const char *label)
+{
+    ESP_LOGI(TAG,
+             "%s: reports=%lu unique=%lu repeated=%lu scan_responses=%lu",
+             label,
+             (unsigned long)s_scan_test_stats.reports,
+             (unsigned long)s_scan_test_stats.unique_signatures,
+             (unsigned long)s_scan_test_stats.duplicate_signatures,
+             (unsigned long)s_scan_test_stats.scan_responses);
+}
+
+
 static bool registry_test_matches(
     const platform_ble_adv_packet_t *packet,
     void *context)
@@ -245,6 +334,7 @@ static void on_advertisement(
     void *context)
 {
     (void)context;
+    scan_test_record_packet(packet);
 
     if (!s_nonmatching_filter_verified) {
         if (s_nonmatching_callback_count == 0) {
@@ -318,6 +408,46 @@ static void scan_lifecycle_test_task(void *arg)
              (unsigned long)s_after_error_driver_count);
     ESP_ERROR_CHECK(s_failing_driver_call_count > 0 &&
                     s_after_error_driver_count > 0 ? ESP_OK : ESP_FAIL);
+
+    /* Compare identical passive-scan windows with controller duplicate
+     * filtering disabled and enabled. Results are diagnostic: nearby
+     * advertisers and changing payloads affect the observed counts. */
+    platform_ble_scan_config_t duplicate_config =
+        PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
+    duplicate_config.duration_ms = 6000;
+    duplicate_config.filter_duplicates = false;
+    scan_test_begin(SCAN_TEST_PHASE_DUPLICATES_OFF);
+    ESP_ERROR_CHECK(platform_ble_scan_start(&duplicate_config));
+    ESP_LOGI(TAG, "Duplicate filter test: passive scan, filtering disabled");
+    vTaskDelay(pdMS_TO_TICKS(6500));
+    scan_test_log_stats("Duplicate filter disabled");
+    ESP_ERROR_CHECK(!platform_ble_scan_is_active() ? ESP_OK : ESP_FAIL);
+
+    vTaskDelay(pdMS_TO_TICKS(500));
+    duplicate_config.filter_duplicates = true;
+    scan_test_begin(SCAN_TEST_PHASE_DUPLICATES_ON);
+    ESP_ERROR_CHECK(platform_ble_scan_start(&duplicate_config));
+    ESP_LOGI(TAG, "Duplicate filter test: passive scan, filtering enabled");
+    vTaskDelay(pdMS_TO_TICKS(6500));
+    scan_test_log_stats("Duplicate filter enabled");
+    ESP_ERROR_CHECK(!platform_ble_scan_is_active() ? ESP_OK : ESP_FAIL);
+
+    /* Active scan can only produce Scan Response reports from scannable
+     * advertisers in range. The log reports the observed count. */
+    vTaskDelay(pdMS_TO_TICKS(500));
+    platform_ble_scan_config_t response_config =
+        PLATFORM_BLE_SCAN_DEFAULT_CONFIG();
+    response_config.active = true;
+    response_config.duration_ms = 10000;
+    scan_test_begin(SCAN_TEST_PHASE_ACTIVE_SCAN);
+    ESP_ERROR_CHECK(platform_ble_scan_start(&response_config));
+    ESP_LOGI(TAG, "Scan Response test: active scan for 10 seconds");
+    vTaskDelay(pdMS_TO_TICKS(10500));
+    scan_test_log_stats("Active scan / Scan Response");
+    ESP_ERROR_CHECK(!platform_ble_scan_is_active() ? ESP_OK : ESP_FAIL);
+    s_scan_test_phase = SCAN_TEST_PHASE_NONE;
+
+    ESP_LOGI(TAG, "BLE scan tests finished");
     vTaskDelete(NULL);
 }
 
