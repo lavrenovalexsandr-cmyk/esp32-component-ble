@@ -83,6 +83,16 @@ Dispatch драйверов, scan callback и event callback выполняют�
 
 На текущем этапе сохраняется линейный dispatch. Предварительная фильтрация по общим признакам (например, manufacturer ID или service UUID) может быть рассмотрена позднее, а индексированный dispatch — только если измерения покажут, что текущая схема стала узким местом. Усложнять API до появления такого подтверждения не планируется.
 
+## 8.2 Повторная инициализация и deinit
+
+`platform_ble_deinit()` завершает текущую BLE-сессию: останавливает активное сканирование, останавливает NimBLE host и освобождает ресурсы NimBLE. После успешного deinit `platform_ble_is_initialized()`, `platform_ble_is_host_synced()` и `platform_ble_scan_is_active()` должны возвращать `false`.
+
+Runtime-состояние scan, включая запрос на сканирование и отложенную конфигурацию, сбрасывается при остановке BLE. Установленный callback scan и его context сохраняются между циклами init/deinit. Driver registry и event callback не сбрасываются.
+
+Повторный `platform_ble_init()` разрешён после успешного завершения предыдущего `platform_ble_deinit()`. Приложение не должно вызывать init повторно, если BLE уже инициализирован, или продолжать использовать BLE API после неуспешного deinit.
+
+На ESP32-C3 аппаратно проверены два повторных цикла: continuous scan с ручной остановкой и finite scan с автоматическим завершением через 3 секунды; оба завершились успешным deinit и остановкой NimBLE host task.
+
 ## 9. Проверки перед фиксацией API
 
 1. Сборка на ESP-IDF 6.1 для ESP32-C3 — пройдена после добавления registry.
@@ -92,4 +102,4 @@ Dispatch драйверов, scan callback и event callback выполняют�
 5. Live scan подтвердил фильтрацию драйвера с matches() == false и получение advertising reports.
 6. Изоляция ошибки on_advertisement() одного драйвера — пройдена на ESP32-C3: первый тестовый драйвер один раз вернул ESP_FAIL, следующий продолжил обработку; итоговые счётчики обоих драйверов — 145.
 7. Scan stop/restart и active scan с конечным duration — пройдены на ESP32-C3: passive scan остановлен вручную, active scan запущен повторно и автоматически завершился (reason=0; platform_ble_scan_is_active() == false).
-8. Duplicate filtering и фактическое получение Scan Response — пройдены на ESP32-C3: без фильтрации получено 153 reports (27 уникальных сигнатур, 126 повторов), с фильтрацией — 29 reports (29 уникальных, 0 повторов); active scan получил 383 reports, включая 132 Scan Response. Проверка адресации и порядка байтов BLE address, повторной инициализации и deinit — ещё требуется.
+8. Duplicate filtering и фактическое получение Scan Response — пройдены на ESP32-C3: без фильтрации получено 153 reports (27 уникальных сигнатур, 126 повторов), с фильтрацией — 29 reports (29 уникальных, 0 повторов); active scan получил 383 reports, включая 132 Scan Response. Проверка адресации и порядка байтов BLE address, повторной инициализации и deinit — пройдена на ESP32-C3.
