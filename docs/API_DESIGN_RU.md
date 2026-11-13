@@ -2,7 +2,7 @@
 
 ## 1. Статус
 
-Документ фиксирует публичный контракт первого этапа. Lifecycle, scan, driver registry и event API реализованы. Проект собран для ESP32-C3; на плате подтверждены NimBLE host sync, passive scan, приём advertising reports, обработка пакетов тестовым драйвером и доставка application event. Граничные сценарии registry и расширенная проверка scan lifecycle остаются в плане.
+Документ фиксирует публичный контракт первого этапа. Lifecycle, scan, driver registry и event API реализованы. Проект собран для ESP32-C3; на плате подтверждены NimBLE host sync, passive scan, приём advertising reports, обработка пакетов тестовым драйвером и доставка application event. В тестовое приложение добавлены startup self-tests duplicate ID, capacity/overflow, unregister, освобождения слота и event callback; live scan проверяет фильтрацию драйвера с matches() == false. Эти новые проверки ещё не собраны и не запущены после добавления. Расширенная проверка scan lifecycle остаётся в плане.
 
 ## 2. Общие правила
 
@@ -81,9 +81,10 @@ Dispatch драйверов, scan callback и event callback выполняют�
 
 1. Сборка на ESP-IDF 6.1 для ESP32-C3 — пройдена после добавления registry.
 2. Базовая аппаратная проверка NimBLE sync, passive scan, advertising reports, dispatch в тестовый драйвер и application event — пройдена.
-3. Повторная регистрация ID, снятие регистрации, заполнение registry до 8 драйверов и переполнение — требуется детерминированная проверка.
-4. Проверка dispatch для совпадающих/несовпадающих драйверов и изоляции ошибок callback — требуется детерминированная проверка.
-5. Проверка отсутствующего event callback и неизвестного driver ID — требуется детерминированная проверка.
+3. Startup self-tests добавлены для повторной регистрации ID, заполнения registry до 8 драйверов, переполнения, unregister, повторного unregister и освобождения слота — требуется сборка и запуск.
+4. Live scan проверяет, что драйвер с matches() == false не получает on_advertisement() — требуется сборка и запуск новой версии.
+5. Startup self-tests добавлены для отсутствующего event callback и неизвестного driver ID — требуется сборка и запуск.
+6. Изоляция ошибки on_advertisement() одного драйвера пока отдельно не проверяется.
 6. Проверка старта/остановки scan, конечного duration, active/passive режима и duplicate filtering — требуется расширенная аппаратная проверка.
 7. Проверка адресации и порядка байтов BLE address.
 8. Проверка повторной инициализации и deinit.
